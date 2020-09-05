@@ -17,9 +17,9 @@ CoopSolitaireGameManager.prototype.setup = function (ignoreActuate) {
 	this.board = new CoopSolitaireBoard();
 
 	// Update the actuator
-	// if (!ignoreActuate) {
-	// 	this.actuate();
-	// }
+	if (!ignoreActuate) {
+		this.actuate();
+	}
 };
 
 // Sends the updated board to the actuator
@@ -27,7 +27,7 @@ CoopSolitaireGameManager.prototype.actuate = function() {
 	if (this.isCopy) {
 		return;
 	}
-	this.actuator.actuate(this.board, gameController.theGame, gameController.drawnTile);
+	this.actuator.actuate(this.board, this, gameController.drawnTile);
 };
 
 CoopSolitaireGameManager.prototype.runNotationMove = function(move, withActuate) {

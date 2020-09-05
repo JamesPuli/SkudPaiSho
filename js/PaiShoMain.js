@@ -45,9 +45,13 @@ var QueryString = function () {
 	  pixelsho: "Pixel Sho v1 Tiles", //"pixelsho",
 	  pixelsho2: "Pixel Sho v2 Tiles", //"pixelsho2",
 	  xiangqi: "Xiangqi Style", //"xiangqi"
-	  water: "Water themed Vescucci Tiles",
+	  water: "Water-Themed Vescucci Tiles",
 	  vescuccicolored: "Vescucci Colored",
-	  vescuccicolored2: "Vescucci Colored 2"
+	  vescuccicolored2: "Vescucci Colored 2",
+	  earth: "Earth-Themed Vescucci Tiles",
+	  chujired: "Chu Ji Red", //"chujired",
+	  chujiblue: "Chu Ji Blue", //"chujired",
+	  chujimono: "Chu Ji Monochrome" //"chujired"
   };
   
   var paiShoBoardDesignTypeKey = "paiShoBoardDesignTypeKey";
@@ -64,11 +68,13 @@ var QueryString = function () {
 	  fire: "Fire by BoomerangGuy",
 	  air: "Air by Monk_Gyatso",
 	  nick: "Nick style by BoomerangGuy",
+	  nickoffset: "Nick offset-lines",
 	  owl: "Order of the White Lotus by Geebung",
 	  metal: "Metal Bender style by ohreaganoe",
 	  whitethread: "White Thread by tree",
 	  avatarstate: "Avatar State by el craken",
-	  blowtorch: "Blowtorch by ProfPetruescu"
+	  blowtorch: "Blowtorch by ProfPetruescu",
+	  checkeredtraining: "Checkered Training Board by Aba"
   };
   
   var paiShoBoardDesignDropdownId = "PaiShoBoardDesignSelect";
@@ -383,19 +389,34 @@ var QueryString = function () {
 	  document.getElementById('guestTilesContainer').innerHTML = gameController.getGuestTilesContainerDivs();
   }
   
+  var userIsSignedInOk = true;
+  var onlinePlayPaused = false;
+
+  function resumeOnlinePlay() {
+	onlinePlayPaused = false;
+  }
+
+  function showOnlinePlayPausedModal() {
+	  closeGame();
+	showModal("Online Play Paused", "Sorry, something was wrong and online play is currently paused. Take a break for some tea!<br /><br />You may attempt to <span class='skipBonus' onclick='resumeOnlinePlay(); closeModal();'>resume online play</span>.", true);
+  }
+
   var initialVerifyLoginCallback = function initialVerifyLoginCallback(response) {
 				  if (response === "Results exist") {
 					  startLoggingOnlineStatus();
 					  startWatchingNumberOfGamesWhereUserTurn();
 					  appCaller.alertAppLoaded();
+					  userIsSignedInOk = true;
 				  } else {
 					  // Cannot verify user login, forget all current stuff.
 					  if (getUsername()) {
 						  // showModal("Signed Out :(", "If you were signed out unexpectedly, please send Skud this secret message via Discord: " + LZString.compressToEncodedURIComponent("Response:" + response + " LoginToken: " + JSON.stringify(getLoginToken())), true);
-						  showModal("Signed Out", "Sorry you were unexpectedly signed out :( <br /><br />Please sign in again to keep playing.");
+						//   showModal("Signed Out", "Sorry you were unexpectedly signed out :( <br /><br />Please sign in again to keep playing.");
+						showOnlinePlayPausedModal();
+						onlinePlayPaused = true;
 					  }
-					  forgetCurrentGameInfo();
-					  forgetOnlinePlayInfo();
+					  /* forgetCurrentGameInfo();
+					  forgetOnlinePlayInfo(); */
 				  }
 			  };
   
@@ -413,14 +434,17 @@ var QueryString = function () {
   var verifyLoginCallback = function verifyLoginCallback(response) {
 				  if (response === "Results exist") {
 					  // ok
+					  userIsSignedInOk = true;
 				  } else {
 					  // Cannot verify user login, forget all current stuff.
 					  if (getUsername()) {
 						  // showModal("Signed Out :(", "If you were signed out unexpectedly, please send Skud this secret message via Discord: " + LZString.compressToEncodedURIComponent("Response:" + response + " LoginToken: " + JSON.stringify(getLoginToken())), true);
-						  showModal("Signed Out", "Sorry you were unexpectedly signed out :( <br /><br />Please sign in again to keep playing.");
+						//   showModal("Signed Out", "Sorry you were unexpectedly signed out :( <br /><br />Please sign in again to keep playing.");
+						showOnlinePlayPausedModal();
+						onlinePlayPaused = true;
 					  }
-					  forgetCurrentGameInfo();
-					  forgetOnlinePlayInfo();
+					//   forgetCurrentGameInfo();
+					//   forgetOnlinePlayInfo();
 				  }
 			  };
   
@@ -631,7 +655,9 @@ var QueryString = function () {
 	  clearGameWatchInterval();
   
 	  gameWatchIntervalValue = setInterval(function() {
+		if (!onlinePlayPaused) {
 		  gameWatchPulse();
+		}
 	  }, REAL_TIME_GAME_WATCH_INTERVAL);
   }
   
@@ -1891,7 +1917,9 @@ var QueryString = function () {
 		  return;
 	  }
 	  clearGameWatchInterval();
-	  onlinePlayEngine.getGameInfo(getUserId(), gameIdChosen, jumpToGameCallback);
+	  if (!onlinePlayPaused) {
+		onlinePlayEngine.getGameInfo(getUserId(), gameIdChosen, jumpToGameCallback);
+	  }
   }
   
   function populateMyGamesList(results) {
@@ -1979,14 +2007,18 @@ var QueryString = function () {
 	  closeModal();
   
 	  showAllCompletedGamesInList = false;
-	  onlinePlayEngine.getPastGamesForUserNew(getLoginToken(), showPastGamesCallback);
+	  if (!onlinePlayPaused) {
+		onlinePlayEngine.getPastGamesForUserNew(getLoginToken(), showPastGamesCallback);
+	  }
   }
   
   function showAllCompletedGames() {
 	  closeModal();
   
 	  showAllCompletedGamesInList = true;
-	  onlinePlayEngine.getPastGamesForUserNew(getLoginToken(), showPastGamesCallback);
+	  if (!onlinePlayPaused) {
+		onlinePlayEngine.getPastGamesForUserNew(getLoginToken(), showPastGamesCallback);
+	  }
   }
   
   var showMyGamesCallback = function showMyGamesCallback(results) {
@@ -2049,8 +2081,12 @@ var QueryString = function () {
   };
   
   function showMyGames() {
-	  showModal("Active Games", getLoadingModalText());
-	  onlinePlayEngine.getCurrentGamesForUserNew(getLoginToken(), showMyGamesCallback);
+	  if (!onlinePlayPaused) {
+		showModal("Active Games", getLoadingModalText());
+		onlinePlayEngine.getCurrentGamesForUserNew(getLoginToken(), showMyGamesCallback);
+	  } else {
+		showOnlinePlayPausedModal();
+	  }
   }
   
   var emptyCallback = function emptyCallback(results) {
@@ -2291,8 +2327,12 @@ var QueryString = function () {
 	  if (!window.navigator.onLine) {
 		  showCurrentlyOfflineModal();
 	  } else if (onlinePlayEnabled && userIsLoggedIn()) {
+		if (!onlinePlayPaused) {
 		  showModal("Join a game", getLoadingModalText());
 		  onlinePlayEngine.getGameSeeks(getGameSeeksCallback);
+		} else {
+			showOnlinePlayPausedModal();
+		}
 	  } else if (onlinePlayEnabled) {
 		  showModal("Join a game", "<span class='skipBonus' onclick='loginClicked();'>Sign in</span> to play real-time games with others online. When you are signed in, this is where you can join games against other players.");
 	  } else {
@@ -2343,7 +2383,7 @@ var QueryString = function () {
 	  tempGameTypeId = gameTypeId;
 	  if (playingOnlineGame()) {
 		  callSubmitMove();
-	  } else if (userIsLoggedIn() && window.navigator.onLine) {
+	  } else if (userIsLoggedIn() && window.navigator.onLine && !onlinePlayPaused) {
 		  onlinePlayEngine.getCurrentGameSeeksHostedByUser(getUserId(), gameTypeId, getCurrentGameSeeksHostedByUserCallback);
 	  } else {
 		  finalizeMove();
@@ -2450,7 +2490,9 @@ var QueryString = function () {
 	  clearLogOnlineStatusInterval();
   
 	  logOnlineStatusIntervalValue = setInterval(function() {
-		  logOnlineStatusPulse();
+		  if (!onlinePlayPaused) {
+		  	logOnlineStatusPulse();
+		  }
 	  }, LOG_ONLINE_STATUS_INTERVAL);
   }
   
@@ -2527,7 +2569,9 @@ var QueryString = function () {
 	  }
   
 	  userTurnCountInterval = setInterval(function() {
-		  loadNumberOfGamesWhereUserTurn();
+		  if (!onlinePlayPaused) {
+		  	loadNumberOfGamesWhereUserTurn();
+		  }
 	  }, USER_TURN_GAME_WATCH_INTERVAL);
   }
   
